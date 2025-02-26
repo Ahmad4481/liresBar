@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق دردشة</title>
+    <style>body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    text-align: center;
+}
+
+.chat-container {
+    width: 300px;
+    margin: 50px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+#chat-box {
+    height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+input, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+}
+
+button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #218838;
+}
+</style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>تطبيق الدردشة</h2>
+        <input type="text" id="username" placeholder="أدخل اسمك">
+        <div id="chat-box"></div>
+        <input type="text" id="message" placeholder="اكتب رسالة...">
+        <button id="send">إرسال</button>
+    </div>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+      const socket = io("http://localhost:3000");
+
+const usernameInput = document.getElementById("username");
+const messageInput = document.getElementById("message");
+const chatBox = document.getElementById("chat-box");
+const sendButton = document.getElementById("send");
+
+let username = "";
+
+usernameInput.addEventListener("change", () => {
+    username = usernameInput.value;
+    socket.emit("join", username);
+});
+
+sendButton.addEventListener("click", () => {
+    if (messageInput.value.trim() !== "") {
+        const message = { user: username, text: messageInput.value };
+        socket.emit("send-message", message);
+        messageInput.value = "";
+    }
+});
+
+socket.on("name", (m) => {
+  console.log(m)
+})
+socket.on("users", (m) => {
+  console.log(m)
+})
+
+
+
+socket.on("receive-message", (message) => {
+    const messageElement = document.createElement("p");
+    messageElement.innerHTML = `<strong>${message.user}:</strong> ${message.text}`;
+    chatBox.appendChild(messageElement);
+});
+
+    </script>
+</body>
+</html>
