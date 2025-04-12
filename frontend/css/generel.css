@@ -1,0 +1,21 @@
+:root {
+  --text-color--: white;
+  --main-color--: rgba(139, 89, 43, 0.75);
+  --main-color-ofwhite--: #bfbfbf;
+}
+
+html {
+  font-size: 10px;
+}
+
+@media (max-width: 1024px) {
+  html {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 600px) {
+  html {
+    font-size: 7px;
+  }
+}

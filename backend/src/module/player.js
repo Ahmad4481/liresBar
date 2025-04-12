@@ -9,7 +9,8 @@ const PlayerSchema = new mongoose.Schema({
   gameCount: { type: Number, required: true },
   date: { type: Number, required: false},
   tokenToReset: { type: Number, required: false},
-  googleId: { type: String },
+  socketId: {type: String, required: false},
+  status: {type: Array, enum: ['online', 'offline'], required: true}
 });
 
 PlayerSchema.pre('save', async function (next) {

@@ -1,9 +1,11 @@
 const http = require("http");
 const { Server } = require("socket.io");
 const Player = require("./src/module/player");
-const io = new Server();
 const log = require("./src/routers/log");
 const url = require("url");
+const Room = require("../module/room");
+const database = require("./src/config/db");
+const player = require("./src/module/player");
 
 const server = http.createServer((req, res) => {
   // إضافة CORS headers
@@ -22,29 +24,42 @@ const server = http.createServer((req, res) => {
   // التحقق من نوع الطلب والمسار
   if (req.method === "POST" && req.url === "/signup") {
     log.signup(req, res);
-  } 
-  else if (req.method === "POST" && req.url === "/signin") {
+  } else if (req.method === "POST" && req.url === "/signin") {
     log.signin(req, res);
-  } 
-  else if (req.method === "POST" && req.url === "/forgot") {
+  } else if (req.method === "POST" && req.url === "/forgot") {
     log.forgotPassword(req, res);
-  } 
-  else if (req.method === "POST" && req.url === "/reset") {
+  } else if (req.method === "POST" && req.url === "/reset") {
     log.resetPassword(req, res);
-  }else if (req.method === "POST" && req.url === "/newPassword") log.newPassword(req, res);
-  // إضافة مسارات Google
-  else if (req.method === "GET" && parsedUrl.pathname === "/auth/google") {
-    log.googleSignIn(req, res);
-  }
-  else if (req.method === "GET" && parsedUrl.pathname === "/auth/google/callback") {
-    const query = parsedUrl.query;
-    req.query = query; // إضافة query parameters إلى req object
-    log.googleCallback(req, res);
-  }
+  } else if (req.method === "POST" && req.url === "/newPassword")
+    log.newPassword(req, res);
   else {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Not found" }));
   }
+});
+
+const io = new Server(server);
+
+io.on("connection", async (socket) => {
+  socket.on("userId", (userId) => {
+    Player.findOne({ _id: userId }).then(async (player) => {
+      player.socketId = await socket.id;
+      player.status = await "online";
+      await player.save();
+    });
+  });
+
+  socket.on("joinRoom", async (roomId) => {
+    const room = await Room.findOne({ _id: roomId });
+    
+  });
+
+  socket.on("disconnect", () => {
+    Player.findOne({ socketId: socket.id }).then((player) => {
+      player.status = "offline";
+      player.save();
+    });
+  });
 });
 
 server.listen(4001, () => {
