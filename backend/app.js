@@ -1,13 +1,10 @@
 const http = require("http");
 const { Server } = require("socket.io");
 const Player = require("./src/module/player");
-const log = require("./src/routers/log");
+// const log = require("./src/routers/log");
 const url = require("url");
-const Room = require("../module/room");
+const Room = require("./src/module/room");
 const database = require("./src/config/db");
-const player = require("./src/module/player");
-const Player = require("./../module/player");
-const database = require("./../config/db");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
@@ -15,30 +12,12 @@ const jwt = require("jsonwebtoken");
 // const { google } = require("googleapis");
 const dotenv = require("dotenv").config();
 
-
 // تكوين المتغيرات العامة
-let JWT_SECRET = crypto.randomBytes(64).toString("hex");
-const REFRESH_INTERVAL = 24 * 60 * 1000 * 60;
-
-function verifyToken(token) {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
-    return null;
-  }
-}
-
-
-// تحديث المفتاح السري
-function refreshJWTSecret() {
-  JWT_SECRET = crypto.randomBytes(64).toString("hex");
-}
-
-setInterval(refreshJWTSecret, REFRESH_INTERVAL);
+let JWT_SECRET = "secretKeyLirsBar0451";
 
 // دوال JWT
 function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
+  return jwt.sign(payload, JWT_SECRET);
 }
 
 function verifyToken(token) {
@@ -47,6 +26,38 @@ function verifyToken(token) {
   } catch (error) {
     return null;
   }
+}
+function refreshToken(req, res) {
+  let body = "";
+  req.on("data", (data) => {
+    body += data;
+  });
+
+  req.on("end", async () => {
+    try {
+      body = JSON.parse(body);
+      const oldToken = body.token;
+
+      const decoded = verifyToken(oldToken);
+      if (!decoded) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Invalid token" }));
+      }
+
+      // إنشاء توكن جديد
+      const newToken = signToken({
+        id: decoded.id,
+        name: decoded.name,
+        image: decoded.image,
+      });
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ token: newToken }));
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Server error" }));
+    }
+  });
 }
 
 // دالة تسجيل الدخول
@@ -86,20 +97,16 @@ async function signin(req, res) {
         return res.end(JSON.stringify({ error: "Invalid password" }));
       }
 
-      const token = signToken({ id: findPlayer._id, email: findPlayer.email });
+      const token = signToken({
+        id: findPlayer._id,
+        name: findPlayer.name,
+        image: findPlayer.image,
+      });
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          message: "Login successful",
           token,
-          player: {
-            id: findPlayer._id,
-            name: findPlayer.name,
-            email: findPlayer.email,
-            gameCount: findPlayer.gameCount,
-            image: findPlayer.image,
-          },
         })
       );
     } catch (error) {
@@ -119,7 +126,6 @@ async function signup(req, res) {
   req.on("end", async () => {
     try {
       body = JSON.parse(body);
-
       if (!body.name || !body.email || !body.password) {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "All fields required" }));
@@ -142,21 +148,18 @@ async function signup(req, res) {
       });
 
       await player.save();
-
-      const token = signToken({ id: player._id, email: player.email });
+      const token = signToken({
+        id: player._id,
+        name: player.name,
+        image: player.image,
+      });
 
       res.writeHead(201, { "Content-Type": "application/json" });
+
       res.end(
         JSON.stringify({
           message: "Registration successful",
           token,
-          player: {
-            id: player._id,
-            name: player.name,
-            email: player.email,
-            gameCount: player.gameCount,
-            image: player.image,
-          },
         })
       );
     } catch (error) {
@@ -371,17 +374,15 @@ async function googleCallback(req, res) {
   }
 }
 
-module.exports = {
-  signin,
-  signup,
-  forgotPassword,
-  resetPassword,
-  googleSignIn,
-  googleCallback,
-  newPassword,
-};
-
-
+// module.exports = {
+//   signin,
+//   signup,
+//   forgotPassword,
+//   resetPassword,
+//   googleSignIn,
+//   googleCallback,
+//   newPassword,
+// };
 
 const server = http.createServer((req, res) => {
   // إضافة CORS headers
@@ -399,44 +400,78 @@ const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   // التحقق من نوع الطلب والمسار
   if (req.method === "POST" && req.url === "/signup") {
-    log.signup(req, res);
+    signup(req, res);
   } else if (req.method === "POST" && req.url === "/signin") {
-    log.signin(req, res);
+    signin(req, res);
   } else if (req.method === "POST" && req.url === "/forgot") {
-    log.forgotPassword(req, res);
+    forgotPassword(req, res);
   } else if (req.method === "POST" && req.url === "/reset") {
-    log.resetPassword(req, res);
+    resetPassword(req, res);
   } else if (req.method === "POST" && req.url === "/newPassword")
-    log.newPassword(req, res);
-  else {
+    newPassword(req, res);
+  else if (req.method === "POST" && req.url === "/refreshToken") {
+    refreshToken(req, res);
+  } else if (req.method === "POST" && req.url === "/token") {
+    let body = "";
+    req.on("data", (data) => {
+      body = JSON.parse(data);
+    });
+    req.on("end", () => {
+      const token = verifyToken(body.token);
+      if (!token) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Invalid token" }));
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Token is valid" }));
+    });
+  } else {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Not found" }));
   }
 });
 
 const io = new Server(server);
-
-io.on("connection", async (socket) => {
-  socket.on("userId", (userId) => {
-    Player.findOne({ _id: userId }).then(async (player) => {
-      player.socketId = await socket.id;
-      player.status = await "online";
-      await player.save();
+io.on(
+  "connection",
+  async (socket) => {
+    socket.on("userId", async (token) => {
+      const decoded = verifyToken(token);
+      await Player.findOne({ _id: decoded.id }).then(async (player) => {
+        // player.socketId = socket.id;
+        console.log(player._id.toString());
+        socket.id = player._id.toString();
+        player.status = "online";
+        await player.save();
+      });
     });
-  });
-
-  socket.on("joinRoom", async (roomId) => {
-    const room = await Room.findOne({ _id: roomId });
-    
-  });
-
-  socket.on("disconnect", () => {
-    Player.findOne({ socketId: socket.id }).then((player) => {
-      player.status = "offline";
-      player.save();
+    io.fetchSockets().then((sockets) => {
+      sockets.forEach((s) => {
+        console.log(s.id);
+      })
     });
-  });
-});
+
+    // socket.on("joinRoom", async (roomId) => {
+    //   const room = await Room.findOne({ _id: roomId });
+    // });
+
+    socket.on("disconnect", async () => {
+      console.log(socket.id)
+      await Player.findOne({ socketId: socket.id }).then((player) => {
+        player.status = "offline";
+        // socket.leave(player.socketId);
+        player.socketId = null;
+        player.save();
+      });
+    });
+  },
+  {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"],
+    },
+  }
+);
 
 server.listen(4001, () => {
   console.log("Server running on http://localhost:4001");

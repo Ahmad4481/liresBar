@@ -24,26 +24,51 @@
 <body>
   <div class="container">
     <h1>تسجيل الدخول</h1>
-    <form action="index.html" method="post">
+    <form>
       <div class="input-container">
-        <label for="username">الحساب</label>
-        <input type="text" name="username" id="username" required />
+        <label for="email">الحساب</label>
+        <input type="text" name="email" id="email" required />
       </div>
       <div class="input-container">
         <label for="password">كلمة المرور</label>
         <input type="password" name="password" id="password" required />
       </div>
-      <div class="sign-btn">
+      <label class="sign-btn" for="submit">
         <div class="overlay-10"></div>
-        <input type="submit" value="تسجيل الدخول"/>
-      </div>
+        <input type="submit" id="submit" value="تسجيل الدخول"/>
+      </label>
     </form>
     <div class="links">
       <a href="#">نسيت كلمة المرور؟</a>
       <a href="signUp.html">إنشاء حساب جديد</a>
     </div>
   </div>
-  <script src="js/main.js"></script>
+  <script>
+    
+    document.forms[0].addEventListener("submit", (e) => {
+      e.preventDefault();
+      console.log(9)
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      fetch("http://localhost:4001/signin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.token) {
+            localStorage.setItem("token", data.token)
+            open("index.html", "_self")
+          } else {
+            alert("Invalid credentials. Please try again.");
+          }
+        })
+        .catch((error) => console.error("Error:", error));
+    })
+  </script>
 </body>
 
 </html>

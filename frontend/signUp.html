@@ -26,13 +26,24 @@
 
     .custom-file-upload {
       background-color: white;
-      color: white;
-      width: 60px;
-      height: 60px;
+      color: black;
+      width: 40px;
+      height: 40px;
       cursor: pointer;
-      font-size: 16px;
-      display: inline-block;
-      align-self: left;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 14px;
+      margin-bottom: 5px;
+      position: relative;
+    }
+
+    img {
+      width: auto;
+      height: 100%;
+      position: absolute;
+      display: none;
+
     }
   </style>
 </head>
@@ -43,7 +54,8 @@
     <form action="index.html" method="post">
       <div class="upload-container">
         <label for="file-upload" class="custom-file-upload">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          <i class="fa-solid fa-image"></i>
+          <img src="" alt="">
         </label>
         <input id="file-upload" type="file" accept="image/*" />
       </div>
@@ -61,19 +73,60 @@
         <input type="password" name="password" id="password" required />
       </div>
       <div class="input-container">
-        <label for="password">تاكيد كلمة المرور</label>
-        <input type="password" name="password" id="password" required />
+        <label for="confirmPassword">تاكيد كلمة المرور</label>
+        <input type="password" name="confirmPassword" id="confirmPassword" required />
       </div>
-      <div class="sign-btn">
+      <label class="sign-btn" for="submit">
         <div class="overlay-10"></div>
-        <input type="submit" value="تسجيل الدخول" />
-      </div>
+        <input id="submit" type="submit" value="تسجيل الدخول" />
+      </label>
     </form>
     <div class="links">
-      <a href="signUp.html">تسجيل دخول</a>
+      <a href="signIn.html">تسجيل دخول</a>
     </div>
   </div>
-  <script src="js/main.js"></script>
+  <script>
+    document.getElementById("file-upload").addEventListener("change", function (e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        const imgElement = document.querySelector(".custom-file-upload");
+        reader.onload = function (event) {
+          const imgElement = document.querySelector(".upload-container img");
+          imgElement.src = event.target.result;
+          imgElement.style.display = "block";
+          imgElement.parentElement.style.backgroundColor = "transparent";
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    document.forms[0].addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (document.querySelector('#confirmPassword').value == password) {
+        const password = document.getElementById("password").value;
+        const email = document.getElementById("email").value;
+        const username = document.getElementById("username").value;
+        const img = document.querySelector("img").src;
+        fetch("http://localhost:4001/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password, username, img }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.token) {
+              localStorage.setItem("token", data.token)
+              open("index.html", "_self")
+            } else {
+              alert("Invalid credentials. Please try again.");
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+    })
+  </script>
 </body>
 
 </html>

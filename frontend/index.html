@@ -14,7 +14,6 @@
   <link rel="stylesheet" href="css/all.min.css" />
   <link rel="stylesheet" href="css/normalize.css">
   <link rel="stylesheet" href="css/lire.css">
-  <link rel="stylesheet" href="css/generel.css">
 </head>
 
 <body>
@@ -194,6 +193,20 @@
   <div class="btn">جاهز</div>
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script src="lire.js"></script>
+  <!-- <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('public/serviceWorker.js')
+          .then(registration => {
+            console.log('تم تسجيل Service Worker:', registration);
+          })
+          .catch(error => {
+            console.log('فشل تسجيل Service Worker:', error);
+          });
+      });
+    }
+  </script> -->
 </body>
 
 </html>

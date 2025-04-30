@@ -6,11 +6,11 @@ const PlayerSchema = new mongoose.Schema({
   image: { type: String, required: false },
   email: { type: String, required: true },
   password: { type: String, required: true },
-  gameCount: { type: Number, required: true },
+  gameCount: { type: Number, required: false },
   date: { type: Number, required: false},
   tokenToReset: { type: Number, required: false},
   socketId: {type: String, required: false},
-  status: {type: Array, enum: ['online', 'offline'], required: true}
+  status: {type: String, enum: ['online', 'offline'], required: false}
 });
 
 PlayerSchema.pre('save', async function (next) {
